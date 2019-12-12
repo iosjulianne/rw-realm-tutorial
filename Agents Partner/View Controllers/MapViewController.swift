@@ -31,6 +31,7 @@
 import CoreLocation
 import MapKit
 import UIKit
+import RealmSwift
 
 //
 // MARK: - Map View Controller
@@ -52,6 +53,7 @@ class MapViewController: UIViewController {
   var lastAnnotation: MKAnnotation!
   var locationManager = CLLocationManager()
   var userLocated = false
+    var specimens = try! Realm().objects(Specimen.self)
   
   //
   // MARK: - IBActions
@@ -103,12 +105,40 @@ class MapViewController: UIViewController {
     
     mapView.setRegion(zoomRegion, animated: true)
   }
+    
+    func populateMap() {
+      mapView.removeAnnotations(mapView.annotations) // 1
+
+      specimens = try! Realm().objects(Specimen.self) // 2
+
+      // Create annotations for each one
+      for specimen in specimens { // 3
+        let coord = CLLocationCoordinate2D(
+          latitude: specimen.latitude,
+          longitude: specimen.longitude);
+        let specimenAnnotation = SpecimenAnnotation(
+          coordinate: coord,
+          title: specimen.name,
+          subtitle: specimen.category.name,
+          specimen: specimen)
+        mapView.addAnnotation(specimenAnnotation) // 4
+      }
+    }
+    
+/*
+     1. Clear out all the existing annotations on the map to start fresh.
+     2. Refresh your specimens property.
+     3. Loop through specimens and create a SpecimenAnnotation with the coordinates of the specimen, as well as its name and category.
+     4. Add each specimenAnnotation to the MKMapView.
+*/
   
   //
   // MARK: - View Controller
   //
   override func viewDidLoad() {
     super.viewDidLoad()
+    print(Realm.Configuration.defaultConfiguration.fileURL!)
+    // Easy way to find realm location and open using realm browser
     
     title = "Map"
     
@@ -119,6 +149,8 @@ class MapViewController: UIViewController {
     } else {
       locationManager.startUpdatingLocation()
     }
+    
+    populateMap()
   }
   
   override func prepare(for segue: UIStoryboardSegue, sender: Any?) {

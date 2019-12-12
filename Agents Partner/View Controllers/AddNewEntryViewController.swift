@@ -29,6 +29,7 @@
  */
 
 import UIKit
+import RealmSwift
 
 //
 // MARK: - Add New Entry View Controller
@@ -37,6 +38,9 @@ class AddNewEntryViewController: UIViewController {
   @IBOutlet weak var categoryTextField: UITextField!
   @IBOutlet weak var descriptionTextField: UITextView!
   @IBOutlet weak var nameTextField: UITextField!
+    
+    var selectedCategory: Category!
+    var specimen: Specimen!
   
   //
   // MARK: - Variables And Properties
@@ -47,14 +51,20 @@ class AddNewEntryViewController: UIViewController {
   // MARK: - IBActions
   //
   @IBAction func unwindFromCategories(segue: UIStoryboardSegue) {
-    
+    if segue.identifier == "CategorySelectedSegue" {
+        let categoriesController = segue.source as! CategoriesTableViewController
+        selectedCategory = categoriesController.selectedCategory
+        categoryTextField.text = selectedCategory.name
+    }
   }
   
   //
   // MARK: - Private Methods
   //
   func validateFields() -> Bool {
-    if nameTextField.text!.isEmpty || descriptionTextField.text!.isEmpty {
+    if nameTextField.text!.isEmpty ||
+        descriptionTextField.text!.isEmpty ||
+        selectedCategory == nil {
       let alertController = UIAlertController(title: "Validation Error",
                                               message: "All fields must be filled",
                                               preferredStyle: .alert)
@@ -72,6 +82,16 @@ class AddNewEntryViewController: UIViewController {
       return true
     }
   }
+    
+    override func shouldPerformSegue(withIdentifier identifier: String, sender: Any?) -> Bool {
+        if validateFields(){
+            addNewSpecimen()
+            
+            return true
+        } else {
+            return false
+        }
+    }
   
   //
   // MARK: - View Controller
@@ -79,6 +99,33 @@ class AddNewEntryViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
   }
+    
+    
+    func addNewSpecimen(){
+        let realm = try! Realm() // 1
+        
+        try! realm.write { // 2
+            let newSpecimen = Specimen() // 3
+            
+            newSpecimen.name = nameTextField.text! // 4
+            newSpecimen.category = selectedCategory
+            newSpecimen.specimenDescription = descriptionTextField.text!
+            newSpecimen.latitude = selectedAnnotation.coordinate.latitude
+            newSpecimen.longitude = selectedAnnotation.coordinate.longitude
+            
+            realm.add(newSpecimen) // 5
+            specimen = newSpecimen // 6
+        }
+    }
+/*
+     1. First, get a Realm instance, like before.
+     2. Start the write transaction to add your new Specimen.
+     3. Create a new Specimen instance.
+     4. Assign the Specimen values. The values come from the input text fields in the user interface, the selected categories and the coordinates from the map annotation.
+     5. Add the new Specimen to the realm.
+     6. Assign the new Specimen to your specimen property.
+*/
+    
 }
 
 //
